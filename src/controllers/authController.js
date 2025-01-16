@@ -1,4 +1,9 @@
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+
 const User = require("../models/User");
+
+const JWT_AGE = 60 * 60 * 24 * 1;
 
 const errorHandler = (error) => {
   let errors = { email: "", password: "" };
@@ -15,15 +20,35 @@ const errorHandler = (error) => {
   return errors;
 };
 
+const create_JWT_Token = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: JWT_AGE });
+};
+
 const login = async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    //   const user = await User.create({ email, password });
-    res.status(201).json(user);
+    const user = await User.findOne({ email });
+    if (!user) {
+      // throw Error("Email is not registered!");
+      throw Error("Invalid Username or Password!"); //guess what?
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      throw Error("Invalid Username or Password!");
+    }
+
+    const token = create_JWT_Token(user._id);
+    res.cookie("JWT", token, { httpOnly: true, maxAge: JWT_AGE * 1000 });
+    res.status(200).json({ user: user._id });
   } catch (error) {
-    const errors = errorHandler(error);
-    res.status(400).json({ errors });
+    // Creating a structured response because im too lazy to make the previous one work for this too
+    res.status(400).json({
+      errors: {
+        email: error.message.includes("Email") ? error.message : "",
+        password: error.message.includes("Password") ? error.message : "",
+      },
+    });
   }
 };
 
@@ -32,7 +57,9 @@ const register = async (req, res) => {
 
   try {
     const user = await User.create({ email, password });
-    res.status(201).json(user);
+    const token = create_JWT_Token(user._id);
+    res.cookie("JWT", token, { httpOnly: true, maxAge: JWT_AGE * 1000 });
+    res.status(201).json({ user: user._id });
   } catch (error) {
     const errors = errorHandler(error);
     res.status(400).json({ errors });
@@ -40,7 +67,7 @@ const register = async (req, res) => {
 };
 
 const logout = (req, res) => {
-  res.send("Logout API is running");
+  // logout logic --> clear cookie
 };
 
 module.exports = {

@@ -19,25 +19,13 @@ const userSchema = new mongoose.Schema({
 });
 
 // hashing the password before the document is saved
+// could also be done in the controller
 userSchema.pre("save", async function (next) {
   const salt = await bcrypt.genSalt(12);
   const user = this;
   user.password = await bcrypt.hash(user.password, salt);
   next();
 });
-// userSchema.pre  ("save", async function (next) {
-//   const user = this;
-//   if (!user.isModified("password")) {
-//     return next();
-//   }
-//   const salt = await bcrypt.genSalt(10);
-//   user.password = await bcrypt.hash(user.password, salt);
-//   next();
-// });
-
-// userSchema.methods.validatePassword = async function (password) {
-//   return bcrypt.compare(password, this.password);
-// };
 
 // model based on the schema
 const User = mongoose.model("user", userSchema);
