@@ -7,6 +7,13 @@ const JWT_AGE = 60 * 60 * 24 * 1;
 
 const errorHandler = (error) => {
   let errors = { email: "", password: "" };
+
+  if (error.message.includes("Invalid Username or Password!")) {
+    errors.email = "Invalid Username or Password!";
+    errors.password = "Invalid Username or Password!";
+    return errors;
+  }
+
   if (error.code === 11000) {
     errors.email = "Email is already registered";
     return errors;
@@ -42,13 +49,8 @@ const login = async (req, res) => {
     res.cookie("JWT", token, { httpOnly: true, maxAge: JWT_AGE * 1000 });
     res.status(200).json({ user: user._id });
   } catch (error) {
-    // Creating a structured response because im too lazy to make the previous one work for this too
-    res.status(400).json({
-      errors: {
-        email: error.message.includes("Email") ? error.message : "",
-        password: error.message.includes("Password") ? error.message : "",
-      },
-    });
+    const errors = errorHandler(error);
+    res.status(400).json({ errors });
   }
 };
 
