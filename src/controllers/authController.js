@@ -69,7 +69,8 @@ const register = async (req, res) => {
 };
 
 const logout = (req, res) => {
-  // logout logic --> clear cookie
+  res.cookie("JWT", "", { maxAge: 1 });
+  res.status(200).send("Logged out!");
 };
 
 module.exports = {
